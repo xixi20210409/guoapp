@@ -39,7 +39,7 @@ jobs:
         run: |
           BIN=duanju_core_server-linux-arm64
           go build -ldflags="-s -w -X duanjuapp/native/core.buildAllSources=true" \
-            -o "$BIN" ./bridge
+            -o "$BIN" ./cmd/server
           sha256sum "$BIN" | cut -d' ' -f1 > "$BIN.sha256"
           echo "BIN=$PWD/$BIN" >> "$GITHUB_ENV"
           echo "SHA=$(cat $BIN.sha256)" >> "$GITHUB_ENV"
