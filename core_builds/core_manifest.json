@@ -1,0 +1,13 @@
+{
+  "version": "0.2.17",
+  "commit": "42a3098f4546",
+  "built_at": "2026-10-14T05:55:00Z",
+  "go_version": "1.24.1",
+  "all_sources": true,
+  "binary": {
+    "name": "duanju_core_server-linux-arm64",
+    "url": "https://github.com/xixi20210409/guoapp/releases/download/duanju-core/duanju_core_server-linux-arm64",
+    "sha256": "2c646994eab39ad0c4dd3d87d361809ebcfc528a6c4ec4f1b15b5420d70874f9"
+  },
+  "note": "bootstrap manifest. Binary published manually via Releases API (CI disabled: fine-grained PAT lacks Workflows write). Manifest is on xixi20210409/guoapp fork of LanMeiJun/guoapp."
+}
