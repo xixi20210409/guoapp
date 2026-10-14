@@ -1,0 +1,83 @@
+name: Build duanju_core_server (linux/arm64)
+
+# 触发：推送到 main 且 native/ 核心源码变动时，用最新源码编译盒子上插件用的
+# duanju_core_server（真果鉴全站源版），把二进制直接提交进 core_builds/，并回写
+# core_builds/core_manifest.json（binary.url 指向 raw.githubusercontent，无需 Releases 权限）。
+# 插件侧 updater.py 读取该清单，自动把盒子核心更新到最新（与手机 APK 同款）。
+on:
+  push:
+    branches: [main]
+    # 只在本仓库 native/ 核心源码变动时才重新编译，避免「提交二进制/清单 → 又触发 CI」死循环。
+    paths:
+      - 'native/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # 把二进制 + 清单提交回仓库（raw 方案，不用 Releases）
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+
+      - name: Build duanju_core_server (linux/arm64, all-sources)
+        working-directory: native
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 0
+        run: |
+          BIN=duanju_core_server-linux-arm64
+          go build -ldflags="-s -w -X duanjuapp/native/core.buildAllSources=true" \
+            -o "$BIN" ./bridge
+          sha256sum "$BIN" | cut -d' ' -f1 > "$BIN.sha256"
+          echo "BIN=$PWD/$BIN" >> "$GITHUB_ENV"
+          echo "SHA=$(cat $BIN.sha256)" >> "$GITHUB_ENV"
+
+      - name: Stage binary into core_builds (raw scheme)
+        run: |
+          cp "${{ env.BIN }}" core_builds/duanju_core_server-linux-arm64
+
+      - name: Generate manifest
+        run: |
+          COMMIT="${GITHUB_SHA::12}"
+          BUILT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          BIN_NAME=duanju_core_server-linux-arm64
+          cat > core_builds/core_manifest.json <<EOF
+          {
+            "version": "0.2.17",
+            "commit": "$COMMIT",
+            "built_at": "$BUILT",
+            "go_version": "1.24.1",
+            "all_sources": true,
+            "binary": {
+              "name": "$BIN_NAME",
+              "url": "https://raw.githubusercontent.com/${{ github.repository }}/main/core_builds/$BIN_NAME",
+              "sha256": "$SHA"
+            },
+            "note": "Auto-built by CI from native/ source. Binary committed into core_builds/ and served via raw.githubusercontent.com, so the updater needs no auth/Releases permission."
+          }
+          EOF
+          cat core_builds/core_manifest.json
+
+      - name: Commit binary + manifest back to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add core_builds/duanju_core_server-linux-arm64 core_builds/core_manifest.json
+          if git diff --cached --quiet; then
+            echo "no changes, skip commit"
+          else
+            git commit -m "chore: rebuild core ($(echo ${{ env.SHA }} | cut -c1-7)) [skip ci]"
+            git push origin main
+          fi
