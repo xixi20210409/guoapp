@@ -64,22 +64,45 @@ type proxyRouter struct {
 	system         nativeSystemProxy
 	systemRead     time.Time
 	systemOverride bool
+	allow          []string
 }
 
+// proxy decides whether a request should go through the configured proxy.
+// When router.allow is empty (the default), proxying behaviour is unchanged:
+// every request that the system/manual proxy resolves is proxied. When allow
+// is non-empty, only requests whose host matches one of the entries (suffix
+// match) are proxied; everything else goes direct. This lets us route only
+// specific rate-limited / Cloudflare-challenged sources through a proxy while
+// keeping the primary source (e.g. hongguo) on a fast direct connection.
 func (router *proxyRouter) proxy(request *http.Request) (*url.URL, error) {
-	if request.URL.Hostname() == "127.0.0.1" || request.URL.Hostname() == "localhost" || request.URL.Hostname() == "::1" {
+	host := strings.ToLower(request.URL.Hostname())
+	if host == "127.0.0.1" || host == "localhost" || host == "::1" {
 		return nil, nil
 	}
 	router.mu.RLock()
-	mode, manual := router.mode, router.manual
+	mode, manual, allow := router.mode, router.manual, router.allow
 	router.mu.RUnlock()
+	var chosen *url.URL
 	switch mode {
 	case "direct":
 		return nil, nil
 	case "manual":
-		return manual, nil
+		chosen = manual
+	default:
+		chosen, _ = router.systemSettings().resolve(request)
 	}
-	return router.systemSettings().resolve(request)
+	if chosen == nil {
+		return nil, nil
+	}
+	if len(allow) == 0 {
+		return chosen, nil
+	}
+	for _, entry := range allow {
+		if host == entry || strings.HasSuffix(host, "."+entry) {
+			return chosen, nil
+		}
+	}
+	return nil, nil
 }
 
 func (engine *nativeEngine) loadResourceSettings() {

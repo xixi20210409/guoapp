@@ -252,6 +252,14 @@ func newNativeEngine(directory string) (*nativeEngine, error) {
 	cfg := defaultConfig()
 	cfg.dataDir = directory
 	router := &proxyRouter{}
+	if hosts := os.Getenv("DUANJU_CORE_PROXY_HOSTS"); hosts != "" {
+		for _, entry := range strings.Split(hosts, ",") {
+			entry = strings.ToLower(strings.TrimSpace(entry))
+			if entry != "" {
+				router.allow = append(router.allow, entry)
+			}
+		}
+	}
 	d := &Downloader{cfg: cfg, providerHosts: map[string]string{}, proxyRouter: router,
 		limiter: newRequestLimiter(3, 250*time.Millisecond), diagnostics: newDiagnosticLog(directory)}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
