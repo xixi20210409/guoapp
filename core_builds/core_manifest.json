@@ -1,13 +1,13 @@
 {
   "version": "0.2.17",
-  "commit": "2c646994eab3",
-  "built_at": "2026-10-14T06:06:00Z",
+  "commit": "1c933021bb2e",
+  "built_at": "2026-10-14T07:43:50Z",
   "go_version": "1.24.1",
   "all_sources": true,
   "binary": {
     "name": "duanju_core_server-linux-arm64",
     "url": "https://raw.githubusercontent.com/xixi20210409/guoapp/main/core_builds/duanju_core_server-linux-arm64",
-    "sha256": "2c646994eab39ad0c4dd3d87d361809ebcfc528a6c4ec4f1b15b5420d70874f9"
+    "sha256": "847c3728778f1a4095f1710dcb0ca505ee46893eab97e37c4d0e4d6d6c487a46"
   },
-  "note": "bootstrap manifest. Binary committed directly into the fork repo (core_builds/) and served via raw.githubusercontent.com, so the updater needs no auth/Releases permission. Manifest lives on xixi20210409/guoapp fork of LanMeiJun/guoapp."
+  "note": "Auto-built by CI from native/ source. Binary committed into core_builds/ and served via raw.githubusercontent.com, so the updater needs no auth/Releases permission."
 }
